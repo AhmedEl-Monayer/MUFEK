@@ -28,7 +28,7 @@ if (!get('SELECT 1 AS ok FROM users LIMIT 1')) {
 }
 
 const app = express();
-const HOST = process.env.HOST || process.env.IP || '';
+const HOST = process.env.HOST || process.env.IP || '0.0.0.0';
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
 app.use(helmet({
@@ -63,14 +63,19 @@ app.use('/api', (req, res, next) => {
 
 app.use('/api', attachUser);
 
-app.get('/api/health', (req, res) => {
+function healthHandler(req, res) {
   try {
     get('SELECT 1 AS ok');
     res.json({ ok: true, uptime: Math.round(process.uptime()) });
   } catch {
     res.status(503).json({ ok: false });
   }
-});
+}
+
+// Abasthan وبعض الاستضافات تفحص /healthz أو /health؛ وفّر نفس الاستجابة.
+app.get('/api/health', healthHandler);
+app.get('/healthz', healthHandler);
+app.get('/health', healthHandler);
 
 app.get('/api/public/settings', (req, res) => {
   res.json({

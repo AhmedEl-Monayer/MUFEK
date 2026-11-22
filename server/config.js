@@ -27,7 +27,8 @@ function loadSecret() {
 }
 
 export const SECRET = loadSecret();
-export const PORT = Number(process.env.PORT || 4000);
+// Abasthan يكتشف المنفذ 9400 التابع له؛ خلّي الافتراضي متوافق معاه.
+export const PORT = Number(process.env.PORT || 9400);
 export const IS_PROD = process.env.NODE_ENV === 'production';
 export const SESSION_DAYS = 14;
 export const MAX_FILE_MB = Number(process.env.MAX_FILE_MB || 20);
