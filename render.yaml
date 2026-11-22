@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: elmanasa
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: APP_SECRET
+        generateValue: true
+      - key: TURSO_DATABASE_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false
+      - key: DEVELOPER_PASSWORD
+        sync: false
+      - key: MAX_FILE_MB
+        value: "10"
+      - key: ALLOWED_ORIGINS
+        sync: false
