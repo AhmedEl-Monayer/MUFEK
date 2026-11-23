@@ -7,6 +7,7 @@ import { api } from '../../lib/api.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { useFetch } from '../../hooks/useFetch.js';
 import { fmtDate } from '../../lib/format.js';
+import { prepareCourseImage } from '../../lib/image.js';
 import {
   Badge, Button, EmptyState, Field, FilePicker, FullLoader, Input, Modal, PageHead, SearchInput,
   Select, StatCard, Textarea
@@ -253,7 +254,9 @@ export default function AdminCourses() {
             <FilePicker
               file={form.image}
               onChange={(file) => setForm((current) => ({ ...current, image: file }))}
+              prepare={prepareCourseImage}
               accept="image/jpeg,image/png,image/webp"
+              hint="تُصغّر الصورة تلقائياً لتوفير المساحة"
               label="اختر صورة الغلاف"
             />
           </Field>

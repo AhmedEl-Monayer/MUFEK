@@ -1,5 +1,5 @@
 import express from 'express';
-import { all, get, nowIso, run, setting, setSetting } from '../db.js';
+import { all, deleteAsset, get, nowIso, run, setting, setSetting, tx } from '../db.js';
 import { requireRole } from '../auth.js';
 import {
   asyncHandler,
@@ -182,6 +182,127 @@ router.post('/users/:id/reset-password', asyncHandler(async (req, res) => {
     ok: true,
     temporaryPassword: req.body?.password ? null : password,
     message: 'تم إعادة تعيين كلمة المرور وإلغاء جلسات المستخدم'
+  });
+}));
+
+// حذف نهائي لحساب المستخدم وكل بياناته الخاصة، مع حماية حساب المطور.
+router.delete('/users/:id', asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  const target = get('SELECT * FROM users WHERE id = ?', id);
+  if (!target) throw httpError(404, 'المستخدم غير موجود');
+  if (target.role === 'developer' || id === req.user.id) {
+    throw httpError(400, 'لا يمكن حذف حساب مطور أو حسابك الشخصي');
+  }
+  const confirm = String(req.body?.confirm || '').trim();
+  if (confirm !== target.username) {
+    throw httpError(400, 'اكتب اسم المستخدم بالضبط لتأكيد الحذف');
+  }
+  const purge = bool(req.body?.purgeCourses, false);
+
+  const assets = new Set();
+  const assignmentIds = new Set();
+  const submissionIds = new Set();
+  if (target.avatar) assets.add(target.avatar);
+
+  const ownedCourses = all('SELECT id, image FROM courses WHERE doctor_id = ?', id);
+  const createdAssignments = all('SELECT id, file FROM assignments WHERE created_by = ?', id);
+  const ownSubmissions = all('SELECT id, file FROM submissions WHERE student_id = ?', id);
+  ownSubmissions.forEach((row) => {
+    submissionIds.add(row.id);
+    if (row.file) assets.add(row.file);
+  });
+
+  let deletedCourses = 0;
+
+  tx(() => {
+    if (purge) {
+      for (const course of ownedCourses) {
+        const assignments = all('SELECT id, file FROM assignments WHERE course_id = ?', course.id);
+        for (const assignment of assignments) {
+          assignmentIds.add(assignment.id);
+          if (assignment.file) assets.add(assignment.file);
+          const subs = all('SELECT id, file FROM submissions WHERE assignment_id = ?', assignment.id);
+          subs.forEach((row) => {
+            submissionIds.add(row.id);
+            if (row.file) assets.add(row.file);
+          });
+        }
+        if (course.image) assets.add(course.image);
+        run('DELETE FROM submissions WHERE assignment_id IN (SELECT id FROM assignments WHERE course_id = ?)', course.id);
+        run('DELETE FROM assignments WHERE course_id = ?', course.id);
+        run('DELETE FROM courses WHERE id = ?', course.id);
+        deletedCourses += 1;
+      }
+      for (const assignment of createdAssignments) {
+        if (assignmentIds.has(assignment.id)) continue;
+        assignmentIds.add(assignment.id);
+        if (assignment.file) assets.add(assignment.file);
+        const subs = all('SELECT id, file FROM submissions WHERE assignment_id = ?', assignment.id);
+        subs.forEach((row) => {
+          submissionIds.add(row.id);
+          if (row.file) assets.add(row.file);
+        });
+        run('DELETE FROM submissions WHERE assignment_id = ?', assignment.id);
+        run('DELETE FROM assignments WHERE id = ?', assignment.id);
+      }
+    } else {
+      // الاحتفاظ بالبيانات الأكاديمية ونقل ملكيتها للمطور الحالي.
+      if (ownedCourses.length) {
+        run('UPDATE courses SET doctor_id = ?, updated_at = ? WHERE doctor_id = ?', req.user.id, nowIso(), id);
+      }
+      if (createdAssignments.length) {
+        run('UPDATE assignments SET created_by = ? WHERE created_by = ?', req.user.id, id);
+      }
+    }
+
+    run('UPDATE chat_requests SET decided_by = NULL WHERE decided_by = ?', id);
+    run('UPDATE submissions SET reviewed_by = NULL WHERE reviewed_by = ?', id);
+    run('DELETE FROM users WHERE id = ?', id);
+    for (const name of assets) deleteAsset(name);
+  });
+
+  res.json({
+    ok: true,
+    message: 'تم حذف الحساب نهائياً',
+    deletedCourses,
+    deletedAssignments: assignmentIds.size,
+    deletedSubmissions: submissionIds.size,
+    deletedFiles: assets.size
+  });
+}));
+
+// إحصاءات التخزين وتنظيف الملفات غير المرتبطة بأي سجل.
+router.get('/storage', asyncHandler(async (req, res) => {
+  const rows = all('SELECT name, size FROM assets');
+  const bytes = rows.reduce((sum, row) => sum + Number(row.size || 0), 0);
+  res.json({
+    files: rows.length,
+    bytes,
+    megabytes: Math.round((bytes / 1024 / 1024) * 10) / 10,
+    limitMb: Number(process.env.MAX_FILE_MB || 20)
+  });
+}));
+
+router.post('/storage/cleanup', asyncHandler(async (req, res) => {
+  const referenced = new Set([
+    ...all('SELECT avatar AS name FROM users WHERE avatar IS NOT NULL').map((r) => r.name),
+    ...all('SELECT image AS name FROM courses WHERE image IS NOT NULL').map((r) => r.name),
+    ...all('SELECT file AS name FROM assignments WHERE file IS NOT NULL').map((r) => r.name),
+    ...all('SELECT file AS name FROM submissions WHERE file IS NOT NULL').map((r) => r.name)
+  ]);
+  const orphans = all('SELECT name, size FROM assets').filter((row) => !referenced.has(row.name));
+  let bytes = 0;
+  tx(() => {
+    for (const row of orphans) {
+      deleteAsset(row.name);
+      bytes += Number(row.size || 0);
+    }
+  });
+  res.json({
+    ok: true,
+    removed: orphans.length,
+    megabytes: Math.round((bytes / 1024 / 1024) * 10) / 10,
+    message: orphans.length ? 'تم حذف الملفات غير المستخدمة' : 'لا توجد ملفات غير مستخدمة'
   });
 }));
 

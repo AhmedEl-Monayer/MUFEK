@@ -1,46 +1,48 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth, homeFor } from './context/AuthContext.jsx';
 import { FullLoader } from './components/ui.jsx';
 import AppShell from './components/AppShell.jsx';
 
-import Login from './pages/Login.jsx';
-import Forgot from './pages/Forgot.jsx';
-import Reset from './pages/Reset.jsx';
-import CompleteProfile from './pages/CompleteProfile.jsx';
-import Notifications from './pages/Notifications.jsx';
-import Profile from './pages/Profile.jsx';
-import ChatHub from './pages/ChatHub.jsx';
-import ChatPage from './pages/ChatPage.jsx';
-import AssignmentDetail from './pages/AssignmentDetail.jsx';
-import NotFound from './pages/NotFound.jsx';
+// تحميل كل صفحة عند فتحها فقط؛ يقلّل حجم ملف JavaScript الأولي بشكل كبير.
+const Login = lazy(() => import('./pages/Login.jsx'));
+const Forgot = lazy(() => import('./pages/Forgot.jsx'));
+const Reset = lazy(() => import('./pages/Reset.jsx'));
+const CompleteProfile = lazy(() => import('./pages/CompleteProfile.jsx'));
+const Notifications = lazy(() => import('./pages/Notifications.jsx'));
+const Profile = lazy(() => import('./pages/Profile.jsx'));
+const ChatHub = lazy(() => import('./pages/ChatHub.jsx'));
+const ChatPage = lazy(() => import('./pages/ChatPage.jsx'));
+const AssignmentDetail = lazy(() => import('./pages/AssignmentDetail.jsx'));
+const NotFound = lazy(() => import('./pages/NotFound.jsx'));
 
-import StudentDashboard from './pages/student/Dashboard.jsx';
-import AvailableCourses from './pages/student/AvailableCourses.jsx';
-import MyCourses from './pages/student/MyCourses.jsx';
-import StudentCourse from './pages/student/StudentCourse.jsx';
-import StudentAssignments from './pages/student/Assignments.jsx';
-import MySubmissions from './pages/student/Submissions.jsx';
+const StudentDashboard = lazy(() => import('./pages/student/Dashboard.jsx'));
+const AvailableCourses = lazy(() => import('./pages/student/AvailableCourses.jsx'));
+const MyCourses = lazy(() => import('./pages/student/MyCourses.jsx'));
+const StudentCourse = lazy(() => import('./pages/student/StudentCourse.jsx'));
+const StudentAssignments = lazy(() => import('./pages/student/Assignments.jsx'));
+const MySubmissions = lazy(() => import('./pages/student/Submissions.jsx'));
 
-import DoctorDashboard from './pages/doctor/Dashboard.jsx';
-import DoctorCourses from './pages/doctor/Courses.jsx';
-import CreateCourse from './pages/doctor/CreateCourse.jsx';
+const DoctorDashboard = lazy(() => import('./pages/doctor/Dashboard.jsx'));
+const DoctorCourses = lazy(() => import('./pages/doctor/Courses.jsx'));
+const CreateCourse = lazy(() => import('./pages/doctor/CreateCourse.jsx'));
 
-import TaDashboard from './pages/ta/Dashboard.jsx';
-import TaCourses from './pages/ta/Courses.jsx';
-import TaRequests from './pages/ta/Requests.jsx';
-import TaSchedule from './pages/ta/Schedule.jsx';
+const TaDashboard = lazy(() => import('./pages/ta/Dashboard.jsx'));
+const TaCourses = lazy(() => import('./pages/ta/Courses.jsx'));
+const TaRequests = lazy(() => import('./pages/ta/Requests.jsx'));
+const TaSchedule = lazy(() => import('./pages/ta/Schedule.jsx'));
 
-import StaffAssignments from './pages/staff/Assignments.jsx';
-import StaffSubmissions from './pages/staff/Submissions.jsx';
-import CourseWorkspace from './pages/staff/CourseWorkspace.jsx';
+const StaffAssignments = lazy(() => import('./pages/staff/Assignments.jsx'));
+const StaffSubmissions = lazy(() => import('./pages/staff/Submissions.jsx'));
+const CourseWorkspace = lazy(() => import('./pages/staff/CourseWorkspace.jsx'));
 
-import AdminDashboard from './pages/admin/Dashboard.jsx';
-import AdminUsers from './pages/admin/Users.jsx';
-import AdminCreateUser from './pages/admin/CreateUser.jsx';
-import AdminCourses from './pages/admin/Courses.jsx';
-import AdminAssignments from './pages/admin/Assignments.jsx';
-import AdminRoles from './pages/admin/Roles.jsx';
-import AdminSettings from './pages/admin/Settings.jsx';
+const AdminDashboard = lazy(() => import('./pages/admin/Dashboard.jsx'));
+const AdminUsers = lazy(() => import('./pages/admin/Users.jsx'));
+const AdminCreateUser = lazy(() => import('./pages/admin/CreateUser.jsx'));
+const AdminCourses = lazy(() => import('./pages/admin/Courses.jsx'));
+const AdminAssignments = lazy(() => import('./pages/admin/Assignments.jsx'));
+const AdminRoles = lazy(() => import('./pages/admin/Roles.jsx'));
+const AdminSettings = lazy(() => import('./pages/admin/Settings.jsx'));
 
 function RootRedirect() {
   const { user, loading } = useAuth();
@@ -86,7 +88,8 @@ function RoleGate({ roles, children }) {
 
 export default function App() {
   return (
-    <Routes>
+    <Suspense fallback={<FullLoader label="جارٍ تحميل الصفحة..." />}>
+      <Routes>
       <Route path="/" element={<RootRedirect />} />
       <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
       <Route path="/forgot" element={<PublicOnly><Forgot /></PublicOnly>} />
@@ -133,6 +136,7 @@ export default function App() {
 
         <Route path="*" element={<NotFound />} />
       </Route>
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 }

@@ -136,7 +136,8 @@ app.use('/api', (req, res) => {
 });
 
 if (fs.existsSync(DIST_DIR)) {
-  app.use(express.static(DIST_DIR, { index: false, maxAge: '1h' }));
+  // ملفات Vite باسماء مجزّأة (hashed)؛ تخزينها طويلاً يقلّل زمن التحميل.
+  app.use(express.static(DIST_DIR, { index: false, maxAge: '1y', immutable: true }));
   app.get(/^(?!\/api).*/, (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.sendFile(path.join(DIST_DIR, 'index.html'));

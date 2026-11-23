@@ -8,6 +8,7 @@ import { api } from '../../lib/api.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { useFetch } from '../../hooks/useFetch.js';
 import { fmtDate, requestStatusMeta } from '../../lib/format.js';
+import { courseImage } from '../../lib/media.js';
 import {
   Avatar, Badge, Button, Card, ConfirmModal, EmptyState, FullLoader, InfoRow,
   SectionTitle, StatCard, Tabs
@@ -56,7 +57,7 @@ export default function StudentCourse() {
     );
   }
 
-  const heroImage = course.image ? `/api/files/course/${course.id}` : null;
+  const heroImage = courseImage(course);
   const linkedTaId = course.myTaChat?.ta_id || null;
 
   const requestTa = async (ta) => {

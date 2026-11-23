@@ -301,7 +301,7 @@ elmanasa/
 ### ملخص سريع
 
 1. استخدم **Abasthan + Turso** للحصول على استضافة مجانية بدون بطاقة: Abasthan يشغّل الموقع، وTurso يحفظ قاعدة البيانات والملفات.
-2. في Abasthan اضبط: Node.js 22، و`npm ci && npm run build` للبناء، و`npm start` للتشغيل، واختر خطة **Free**.
+2. في Abasthan اضبط: Node.js 22، و`npm ci --include=dev && npm run build` للبناء، و`npm start` للتشغيل، واختر خطة **Free**.
 3. أضف المتغيرات: `NODE_ENV=production`، و`TURSO_DATABASE_URL` و`TURSO_AUTH_TOKEN` من Turso، و`DEVELOPER_PASSWORD`، و`APP_SECRET` من ملف `elmanasa-deploy-values.txt`.
 4. HTTPS مفعّل تلقائياً في Abasthan (إلزامي للكوكي الآمن و SSE).
 5. عند أول إقلاع تُنشأ الجداول وحساب المطور تلقائياً من `DEVELOPER_USERNAME` و`DEVELOPER_PASSWORD`.

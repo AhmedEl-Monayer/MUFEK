@@ -11,21 +11,21 @@ import { uploadPath } from '../uploads.js';
 const router = express.Router();
 router.use(requireAuth);
 
-function sendBuffer(res, key, displayName, inline) {
+function sendBuffer(res, key, displayName, inline, cache = 'private, max-age=300') {
   const asset = readAsset(path.basename(key));
   if (!asset) throw httpError(404, 'الملف غير موجود على الخادم');
-  res.setHeader('Cache-Control', 'private, max-age=300');
+  res.setHeader('Cache-Control', cache);
   res.setHeader('Content-Type', asset.mime || 'application/octet-stream');
   res.setHeader('Content-Disposition', `${inline ? 'inline' : 'attachment'}; filename*=UTF-8''${encodeURIComponent(displayName || key || 'file')}`);
   return res.send(Buffer.from(asset.data, 'base64'));
 }
 
-function send(res, kind, filename, originalName, { inline = false } = {}) {
+function send(res, kind, filename, originalName, { inline = false, cache = 'private, max-age=300' } = {}) {
   if (!filename) throw httpError(404, 'الملف غير موجود');
-  if (CLOUD_MODE) return sendBuffer(res, filename, originalName, inline);
+  if (CLOUD_MODE) return sendBuffer(res, filename, originalName, inline, cache);
   const filePath = uploadPath(kind, filename);
   if (!fs.existsSync(filePath)) throw httpError(404, 'الملف غير موجود على الخادم');
-  res.setHeader('Cache-Control', 'private, max-age=300');
+  res.setHeader('Cache-Control', cache);
   if (inline) {
     res.setHeader('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(originalName || filename)}`);
     return res.sendFile(filePath);
@@ -40,13 +40,13 @@ router.get('/avatar/:name', (req, res, next) => {
     if (CLOUD_MODE) {
       const asset = readAsset(name);
       if (!asset) throw httpError(404, 'الصورة غير موجودة');
-      res.setHeader('Cache-Control', 'private, max-age=86400');
+      res.setHeader('Cache-Control', 'private, max-age=31536000, immutable');
       res.setHeader('Content-Type', asset.mime || 'image/jpeg');
       return res.send(Buffer.from(asset.data, 'base64'));
     }
     const filePath = uploadPath('avatar', name);
     if (!fs.existsSync(filePath)) throw httpError(404, 'الصورة غير موجودة');
-    res.setHeader('Cache-Control', 'private, max-age=86400');
+    res.setHeader('Cache-Control', 'private, max-age=31536000, immutable');
     res.sendFile(filePath);
   } catch (error) {
     next(error);
@@ -58,7 +58,10 @@ router.get('/course/:id', (req, res, next) => {
     const course = get('SELECT image FROM courses WHERE id = ?', Number(req.params.id));
     if (!course) throw httpError(404, 'المادة غير موجودة');
     const inline = req.query.download !== '1';
-    send(res, 'course', course.image, `course-${course.id}`, { inline });
+    const cache = req.query.v
+      ? 'private, max-age=31536000, immutable'
+      : 'private, max-age=300';
+    send(res, 'course', course.image, `course-${course.id}`, { inline, cache });
   } catch (error) {
     next(error);
   }

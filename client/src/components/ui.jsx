@@ -20,8 +20,8 @@ export function Button({
     <button
       type={type}
       className={cn('btn', `btn-${variant}`, size === 'sm' && 'btn-sm', size === 'lg' && 'btn-lg', !children && 'btn-icon', className)}
-      disabled={loading || rest.disabled}
       {...rest}
+      disabled={loading || rest.disabled}
     >
       {loading ? <Loader2 size={17} className="spin" /> : Icon ? <Icon size={17} /> : null}
       {children ? <span>{children}</span> : null}
@@ -106,7 +106,8 @@ export function Avatar({ name, src, size = 42, className = '', ring = false }) {
     background: `linear-gradient(140deg, hsl(${hue} 85% 92%), hsl(${(hue + 40) % 360} 75% 82%))`,
     color: `hsl(${hue} 45% 30%)`
   };
-  const url = src ? (String(src).startsWith('/api') ? src : `/api/files/avatar/${src}`) : null;
+  const raw = src ? String(src) : '';
+  const url = raw ? (raw.startsWith('/api') ? raw : `/api/files/avatar/${raw}?v=${encodeURIComponent(raw)}`) : null;
   return (
     <span className={cn('avatar', ring && 'avatar-ring', className)} style={style}>
       {url ? <img src={url} alt={name || ''} loading="lazy" /> : <span>{initials(name)}</span>}
@@ -263,14 +264,24 @@ export function Progress({ value = 0, max = 100, tone = 'blue' }) {
   );
 }
 
-export function FilePicker({ file, onChange, accept, label = 'اختر ملفاً', hint, required = false }) {
+export function FilePicker({ file, onChange, accept, label = 'اختر ملفاً', hint, required = false, prepare }) {
+  const pick = async (event) => {
+    const picked = event.target.files?.[0] || null;
+    if (!picked) return onChange(null);
+    if (!prepare) return onChange(picked);
+    try {
+      onChange(await prepare(picked));
+    } catch {
+      onChange(picked);
+    }
+  };
   return (
     <label className={cn('file-picker', file && 'has-file')}>
       <input
         type="file"
         accept={accept}
         required={required}
-        onChange={(event) => onChange(event.target.files?.[0] || null)}
+        onChange={pick}
       />
       <span className="file-picker-icon">{file ? <CheckCircle2 size={22} /> : <FileUp size={22} />}</span>
       <span className="file-picker-body">

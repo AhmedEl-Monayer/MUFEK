@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import {
-  BellRing, Building2, Mail, Save, Settings2, ShieldCheck, Timer, ToggleLeft, UserRoundCog
+  BellRing, Building2, HardDrive, Mail, RefreshCw, Save, Settings2, ShieldCheck, Sparkles,
+  Timer, ToggleLeft, Trash2, UserRoundCog
 } from 'lucide-react';
 import { api } from '../../lib/api.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import { useFetch } from '../../hooks/useFetch.js';
-import { Button, Card, Field, FullLoader, Input, PageHead, SectionTitle } from '../../components/ui.jsx';
+import { Button, Card, Field, FullLoader, Input, PageHead, Progress, SectionTitle } from '../../components/ui.jsx';
+import { DEVELOPER_NAME, DEVELOPER_NAME_AR } from '../../lib/credits.js';
 
 const DEFAULTS = {
   platform_name: 'منصة هندسة المنوفية',
@@ -37,8 +39,10 @@ export default function AdminSettings() {
   const { setSettings } = useAuth();
   const { push } = useToast();
   const { data, loading, error, reload } = useFetch('/admin/settings');
+  const { data: storage, loading: storageLoading, reload: reloadStorage } = useFetch('/admin/storage');
   const [form, setForm] = useState(DEFAULTS);
   const [saving, setSaving] = useState(false);
+  const [cleaning, setCleaning] = useState(false);
 
   useEffect(() => {
     if (data?.settings) setForm({ ...DEFAULTS, ...data.settings });
@@ -68,7 +72,20 @@ export default function AdminSettings() {
     }
   };
 
-  if (loading) return <FullLoader label="جارٍ تحميل إعدادات المنصة..." />;
+  const cleanStorage = async () => {
+    setCleaning(true);
+    try {
+      const result = await api('/admin/storage/cleanup', { method: 'POST' });
+      push(result.message || 'تم تنظيف التخزين');
+      await reloadStorage({ silent: true });
+    } catch (err) {
+      push(err.message, 'error');
+    } finally {
+      setCleaning(false);
+    }
+  };
+
+  if (loading || storageLoading) return <FullLoader label="جارٍ تحميل إعدادات المنصة..." />;
 
   return (
     <div className="page">
@@ -110,6 +127,17 @@ export default function AdminSettings() {
           </Card>
 
           <Card>
+            <SectionTitle title="مطور المنصة" subtitle="هوية الجهة التي صمّمت هذه المنصة وأنشأتها." />
+            <div className="credit-box">
+              <span className="info-icon"><Sparkles size={18} /></span>
+              <div>
+                <strong dir="ltr">{DEVELOPER_NAME}</strong>
+                <small>{DEVELOPER_NAME_AR}</small>
+              </div>
+            </div>
+          </Card>
+
+          <Card>
             <SectionTitle title="المواعيد النهائية" subtitle="تحكم في تنبيهات التسليم والسماح بالتأخير." />
             <div className="col gap-14" style={{ marginTop: 14 }}>
               <Field label="عدد ساعات التنبيه قبل الموعد النهائي" hint="يُرسل تنبيه للتكليفات التي لم يتم تسليمها قبل الموعد بهذه المدة.">
@@ -145,6 +173,40 @@ export default function AdminSettings() {
               <div className="notice warning">
                 <BellRing size={17} />
                 <span>تعطيل إلغاء الاشتراك يمنع الطالب من مغادرة المادة بنفسه، لكنه لا يمنع إدارة المادة من إزالته.</span>
+              </div>
+            </div>
+          </Card>
+
+          <Card>
+            <SectionTitle
+              title="مساحة التخزين"
+              subtitle="الصور تُضغط تلقائياً قبل الرفع، ويمكنك حذف الملفات غير المرتبطة بأي مادة أو تسليم."
+              action={(
+                <Button size="sm" variant="soft" icon={RefreshCw} loading={cleaning} onClick={cleanStorage}>
+                  تنظيف
+                </Button>
+              )}
+            />
+            <div className="col gap-8" style={{ marginTop: 14 }}>
+              <div className="info-row">
+                <span className="info-icon"><HardDrive size={16} /></span>
+                <span className="info-label">الملفات المحفوظة</span>
+                <span className="info-value">{storage?.files ?? 0} ملف</span>
+              </div>
+              <div className="info-row">
+                <span className="info-icon"><Trash2 size={16} /></span>
+                <span className="info-label">المساحة المستخدمة</span>
+                <span className="info-value">{storage?.megabytes ?? 0} ميجابايت</span>
+              </div>
+              <div className="info-row">
+                <span className="info-icon"><ShieldCheck size={16} /></span>
+                <span className="info-label">أقصى حجم للملف الواحد</span>
+                <span className="info-value">{storage?.limitMb ?? 20} ميجابايت</span>
+              </div>
+              <Progress value={storage?.megabytes || 0} max={5120} tone="success" />
+              <div className="notice warning">
+                <HardDrive size={17} />
+                <span>الخطة المجانية توفر 5 جيجابايت. الضغط والتنظيف يحافظان على المساحة دون بطاقة ائتمان.</span>
               </div>
             </div>
           </Card>

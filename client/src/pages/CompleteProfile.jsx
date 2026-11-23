@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { useFetch } from '../hooks/useFetch.js';
 import { Avatar, Button, ErrorNote, Field, FullLoader, Input } from '../components/ui.jsx';
+import { prepareAvatar } from '../lib/image.js';
 
 export default function CompleteProfile() {
   const { updateUser } = useAuth();
@@ -41,7 +42,7 @@ export default function CompleteProfile() {
     try {
       if (file) {
         const fd = new FormData();
-        fd.append('avatar', file);
+        fd.append('avatar', await prepareAvatar(file));
         const avatarResult = await api('/profile/avatar', { method: 'POST', form: fd });
         updateUser(avatarResult.user);
       }

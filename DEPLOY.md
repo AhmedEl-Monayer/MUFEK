@@ -49,7 +49,7 @@
 3. اختر GitHub، ثم المستودع والـ branch الذي رفعت عليه الكود.
 4. اضبط:
    - **App Language & Version:** `Node.js 22`
-   - **Build Command:** `npm ci && npm run build`
+   - **Build Command:** `npm ci --include=dev && npm run build`
    - **Start Command:** `npm start`
    - **Instance / Plan:** `Free`
 5. في تبويب **Environment Variables** أضف:

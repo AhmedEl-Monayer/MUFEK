@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { useFetch } from '../hooks/useFetch.js';
 import { fmtDate, fmtDateTime, roleLabel } from '../lib/format.js';
+import { prepareAvatar } from '../lib/image.js';
 import { Avatar, Badge, Button, Card, ErrorNote, Field, FullLoader, InfoRow, Input, PageHead, SectionTitle } from '../components/ui.jsx';
 
 export default function Profile() {
@@ -51,7 +52,7 @@ export default function Profile() {
     setUploading(true);
     try {
       const fd = new FormData();
-      fd.append('avatar', file);
+      fd.append('avatar', await prepareAvatar(file));
       const result = await api('/profile/avatar', { method: 'POST', form: fd });
       updateUser(result.user);
       await reload({ silent: true });

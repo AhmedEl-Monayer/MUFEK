@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useAuth, homeFor } from '../context/AuthContext.jsx';
 import { Button, ErrorNote, Field, Input } from '../components/ui.jsx';
+import { DEVELOPER_CREDIT, DEVELOPER_NAME_AR } from '../lib/credits.js';
 
 const FEATURES = [
   { icon: MessagesSquare, text: 'محادثات أكاديمية فورية لكل مادة وسكشن' },
@@ -118,6 +119,8 @@ export default function Login() {
           <div className="auth-foot">
             إذا لم يكن لديك حساب، تواصل مع مسؤول المنصة لإنشاء حسابك برقمك القومي.
             <br />© {new Date().getFullYear()} {settings.facultyName} · {settings.universityName}
+            <br /><span className="dev-credit" dir="ltr">{DEVELOPER_CREDIT}</span>
+            <span className="dev-credit">{DEVELOPER_NAME_AR}</span>
           </div>
         </div>
       </section>

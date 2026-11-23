@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
-  CheckCircle2, Copy, KeyRound, Pencil, Search, ShieldCheck, UserPlus, Users as UsersIcon, XCircle
+  AlertTriangle, CheckCircle2, Copy, KeyRound, Pencil, Search, ShieldCheck, Trash2, UserPlus,
+  Users as UsersIcon, XCircle
 } from 'lucide-react';
 import { api } from '../../lib/api.js';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -30,6 +31,10 @@ export default function AdminUsers() {
   const [resetTarget, setResetTarget] = useState(null);
   const [resetting, setResetting] = useState(false);
   const [resetResult, setResetResult] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [purgeCourses, setPurgeCourses] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const users = data?.users || [];
 
@@ -99,6 +104,34 @@ export default function AdminUsers() {
       push('تم نسخ كلمة المرور المؤقتة');
     } catch {
       push('تعذر النسخ التلقائي، انسخ الكلمة يدوياً', 'error');
+    }
+  };
+
+  const openDelete = (user) => {
+    setDeleteTarget(user);
+    setDeleteConfirm('');
+    setPurgeCourses(false);
+  };
+
+  const removeUser = async () => {
+    if (!deleteTarget) return;
+    if (deleteConfirm.trim() !== deleteTarget.username) {
+      push('اكتب اسم المستخدم بالضبط لتأكيد الحذف', 'error');
+      return;
+    }
+    setDeleting(true);
+    try {
+      const result = await api(`/admin/users/${deleteTarget.id}`, {
+        method: 'DELETE',
+        body: { confirm: deleteConfirm.trim(), purgeCourses }
+      });
+      push(result.message || 'تم حذف الحساب نهائياً');
+      setDeleteTarget(null);
+      await reload({ silent: true });
+    } catch (err) {
+      push(err.message, 'error');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -205,6 +238,18 @@ export default function AdminUsers() {
                         >
                           كلمة المرور
                         </Button>
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          icon={Trash2}
+                          disabled={user.role === 'developer' || user.id === me?.id}
+                          title={user.role === 'developer' || user.id === me?.id
+                            ? 'لا يمكن حذف حساب مطور أو حسابك الشخصي'
+                            : 'حذف الحساب نهائياً'}
+                          onClick={() => openDelete(user)}
+                        >
+                          حذف
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -307,6 +352,71 @@ export default function AdminUsers() {
           </div>
           <div className="auth-token">{resetResult?.password}</div>
           <Button variant="soft" icon={Copy} onClick={copyPassword}>نسخ كلمة المرور</Button>
+        </div>
+      </Modal>
+
+      <Modal
+        open={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        title="حذف الحساب نهائياً"
+        subtitle={deleteTarget ? `${deleteTarget.fullName} · @${deleteTarget.username}` : ''}
+        size="sm"
+        footer={(
+          <>
+            <Button variant="ghost" onClick={() => setDeleteTarget(null)}>إلغاء</Button>
+            <Button
+              variant="danger-solid"
+              loading={deleting}
+              disabled={deleteConfirm.trim() !== deleteTarget?.username}
+              onClick={removeUser}
+            >
+              حذف نهائي
+            </Button>
+          </>
+        )}
+      >
+        <div className="col gap-12">
+          <div className="notice danger">
+            <AlertTriangle size={17} />
+            <span>هذا الحذف نهائي ولا يمكن التراجع عنه. سيُحذف الحساب وصورته الشخصية وكل جلساته.</span>
+          </div>
+          <div className="info-row">
+            <span className="info-label">اسم المستخدم للتأكيد</span>
+            <span className="info-value" dir="ltr">@{deleteTarget?.username}</span>
+          </div>
+          <Field label={`اكتب @${deleteTarget?.username || ''} بالضبط`} required>
+            <Input
+              value={deleteConfirm}
+              onChange={(event) => setDeleteConfirm(event.target.value)}
+              dir="ltr"
+              autoComplete="off"
+              placeholder={deleteTarget?.username}
+            />
+          </Field>
+          <Field
+            label="المواد والتكليفات المرتبطة"
+            hint="بدون تحديد هذا الخيار، تُبقى البيانات الأكاديمية وتُنقل ملكيتها لحسابك أنت."
+          >
+            <label className="check-row">
+              <input
+                type="checkbox"
+                checked={purgeCourses}
+                onChange={(event) => setPurgeCourses(event.target.checked)}
+              />
+              حذف المواد والتكليفات والتسليمات وملفاتها نهائياً
+            </label>
+          </Field>
+          {purgeCourses ? (
+            <div className="notice danger">
+              <AlertTriangle size={17} />
+              <span>سيتم حذف كل المواد التي يدرسها هذا المستخدم وكل التكليفات والتسليمات المرتبطة بها، حتى للطلاب الآخرين.</span>
+            </div>
+          ) : (
+            <div className="notice warning">
+              <ShieldCheck size={17} />
+              <span>تسليمات هذا المستخدم وصورته الشخصية تُحذف دائماً، وبقية البيانات الأكاديمية تُحفظ.</span>
+            </div>
+          )}
         </div>
       </Modal>
     </div>

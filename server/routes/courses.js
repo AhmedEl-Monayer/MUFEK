@@ -49,6 +49,7 @@ function listDto(row, user) {
     doctorName: row.doctor_name || doctor?.full_name || '',
     doctorAvatar: doctor?.avatar || null,
     createdAt: row.created_at,
+    updatedAt: row.updated_at,
     ...counts,
     joined: !!membership,
     joinedAt: membership?.joined_at || null,

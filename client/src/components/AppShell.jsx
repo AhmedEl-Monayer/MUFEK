@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   Bell, BookOpen, CalendarClock, ClipboardList, Compass, FileCheck2, GraduationCap,
@@ -7,8 +7,9 @@ import {
 } from 'lucide-react';
 import { useAuth, homeFor } from '../context/AuthContext.jsx';
 import { useNotifications } from '../context/NotificationContext.jsx';
-import { Avatar, IconButton } from './ui.jsx';
+import { Avatar, FullLoader, IconButton } from './ui.jsx';
 import { roleLabel } from '../lib/format.js';
+import { DEVELOPER_NAME, DEVELOPER_NAME_AR } from '../lib/credits.js';
 
 const NAV = {
   student: [
@@ -176,6 +177,12 @@ export default function AppShell() {
           </div>
           <IconButton icon={LogOut} label="تسجيل الخروج" onClick={doLogout} />
         </div>
+
+        <div className="side-credit">
+          <span>تم التطوير بواسطة</span>
+          <strong dir="ltr">{DEVELOPER_NAME}</strong>
+          <small>{DEVELOPER_NAME_AR}</small>
+        </div>
       </aside>
 
       <div className="main">
@@ -220,7 +227,9 @@ export default function AppShell() {
         </header>
 
         <main className="content">
-          <Outlet />
+          <Suspense fallback={<FullLoader label="جارٍ تحميل الصفحة..." />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>

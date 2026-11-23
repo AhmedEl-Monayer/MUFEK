@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BookOpen, GraduationCap, Image as ImageIcon, Save, Users } from 'lucide-react';
 import { api } from '../../lib/api.js';
+import { prepareCourseImage } from '../../lib/image.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import {
   Button, Card, ErrorNote, Field, FilePicker, Input, PageHead, SectionTitle, Textarea
@@ -62,7 +63,7 @@ export default function CreateCourse() {
                 <Input value={form.code} onChange={update('code')} placeholder="مثال: ECE 201" maxLength={24} />
               </Field>
               <Field label="صورة المادة" hint="اختيارية — تظهر كغلاف للمادة">
-                <FilePicker file={image} onChange={setImage} accept="image/png,image/jpeg,image/webp" label="اختيار صورة الغلاف" />
+                <FilePicker file={image} onChange={setImage} prepare={prepareCourseImage} accept="image/png,image/jpeg,image/webp" label="اختيار صورة الغلاف" hint="تُصغّر الصورة تلقائياً لتوفير المساحة" />
               </Field>
               <Field label="وصف المادة" className="span-2">
                 <Textarea

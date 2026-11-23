@@ -10,6 +10,8 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import { useFetch } from '../../hooks/useFetch.js';
 import { fmtDate, fmtDateTime, roleLabel, statusMeta } from '../../lib/format.js';
+import { prepareCourseImage } from '../../lib/image.js';
+import { courseImage } from '../../lib/media.js';
 import {
   Avatar, Badge, Button, Card, ConfirmModal, EmptyState, ErrorNote, Field, FilePicker,
   FullLoader, IconButton, InfoRow, Input, Modal, PageHead, SearchInput, SectionTitle, Select,
@@ -133,7 +135,7 @@ export default function CourseWorkspace() {
     return [student.fullName, student.username, student.phone].filter(Boolean).some((value) => String(value).toLowerCase().includes(q));
   });
   const pendingSubmissions = assignments.reduce((sum, item) => sum + Math.max(0, (item.submissionsCount || 0) - (item.gradedCount || 0)), 0);
-  const heroImage = course.image ? `/api/files/course/${course.id}` : null;
+  const heroImage = courseImage(course);
 
   const openAddTa = async () => {
     setAddTaOpen(true);
@@ -605,7 +607,7 @@ export default function CourseWorkspace() {
                 </Field>
                 <div className="span-2">
                   <Field label="صورة المادة" hint="تظهر كغلاف للمادة في كل الصفحات">
-                    <FilePicker file={settingsImage} onChange={setSettingsImage} accept="image/png,image/jpeg,image/webp" label="اختيار صورة جديدة" />
+                    <FilePicker file={settingsImage} onChange={setSettingsImage} prepare={prepareCourseImage} accept="image/png,image/jpeg,image/webp" label="اختيار صورة جديدة" hint="تُصغّر الصورة تلقائياً لتوفير المساحة" />
                   </Field>
                 </div>
                 <div className="field span-2">

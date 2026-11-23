@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
 import { BookOpen, GraduationCap, Users, ClipboardList, ArrowLeft } from 'lucide-react';
 import { Avatar } from './ui.jsx';
+import { courseImage } from '../lib/media.js';
 
 export default function CourseCard({ course, href, action, showJoinState = false }) {
-  const coverImage = course.image ? `/api/files/course/${course.id}` : null;
+  const coverImage = courseImage(course);
   return (
     <article className="glass card course-card">
       <div className="course-cover" style={coverImage ? { backgroundImage: `url(${coverImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}>
